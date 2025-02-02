@@ -3,6 +3,7 @@
 #include <print>
 
 #include "Ensure.h"
+#include "Exception.h"
 #include "Grid.h"
 #include "GridConnection.h"
 
@@ -34,10 +35,29 @@ static constexpr bool logic_gate_type_operation(DCS::LogicGate::Type type, bool 
     }
 }
 
+static constexpr DCS::LogicGate::Type name_to_logic_gate_type(std::string type)
+{
+    using enum DCS::LogicGate::Type;
+    if (type == "AND")
+        return AND;
+    else if (type == "OR")
+        return OR;
+    else if (type == "XOR")
+        return XOR;
+    else if (type == "NAND")
+        return NAND;
+    else if (type == "NAND")
+        return NAND;
+    else if (type == "XNOR")
+        return XNOR;
+    else
+        throw DCS::Exception("invalid logic gate type: {}", type);
+}
+
 namespace DCS
 {
 
-LogicGate::LogicGate(glm::ivec2 position, LogicGate::Type type)
+LogicGate::LogicGate(Position position, LogicGate::Type type)
     : GridObject{position}
     , m_type{type}
 {
@@ -62,6 +82,11 @@ void LogicGate::draw(const Grid& grid, const Renderer& renderer) const
         renderer.default_font(), logic_gate_type_name(m_type), x + width / 2, y + height / 2, 1, {0.0f, 0.0f, 0.0f, 1.0f});
 
     draw_connections(grid, renderer);
+}
+
+std::string LogicGate::name() const
+{
+    return "LogicGate";
 }
 
 std::uint32_t LogicGate::width() const
@@ -92,16 +117,14 @@ void LogicGate::update(const Grid& grid)
 nlohmann::json LogicGate::serialize() const
 {
     nlohmann::json j;
-    j["type"] = "LogicGate";
-
-    nlohmann::json pos;
-    pos["x"] = position().x;
-    pos["y"] = position().y;
-
-    j["position"] = pos;
-    j["gate_type"] = logic_gate_type_name(m_type);
-
+    j["type"] = logic_gate_type_name(m_type);
     return j;
+}
+
+Ref<GridObject> LogicGate::deserialize(Position position, nlohmann::json object_specific)
+{
+    auto type = name_to_logic_gate_type(object_specific["type"]);
+    return MakeRef<LogicGate>(position, type);
 }
 
 }

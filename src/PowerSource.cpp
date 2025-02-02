@@ -9,7 +9,7 @@
 namespace DCS
 {
 
-PowerSource::PowerSource(glm::ivec2 position)
+PowerSource::PowerSource(Position position)
     : GridObject(position)
 {
     m_connections.push_back(GridConnection{{0, 0}, GridConnection::Facing::Down, GridConnection::Direction::Output, this});
@@ -28,6 +28,11 @@ void PowerSource::draw(const Grid& grid, const Renderer& renderer) const
     renderer.draw_rect(x, y, width, height, {0.0f, 1.0f, 0.0f, 1.0f});
 
     draw_connections(grid, renderer);
+}
+
+std::string PowerSource::name() const
+{
+    return "PowerSource";
 }
 
 std::uint32_t PowerSource::width() const
@@ -50,16 +55,12 @@ void PowerSource::update(const Grid& grid)
 
 nlohmann::json PowerSource::serialize() const
 {
-    nlohmann::json j;
-    j["type"] = "PowerSource";
+    return {};
+}
 
-    nlohmann::json pos;
-    pos["x"] = position().x;
-    pos["y"] = position().y;
-
-    j["position"] = pos;
-
-    return j;
+Ref<GridObject> PowerSource::deserialize(Position position, nlohmann::json object_specific)
+{
+    return MakeRef<PowerSource>(position);
 }
 
 }

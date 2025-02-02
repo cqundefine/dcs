@@ -7,7 +7,7 @@
 namespace DCS
 {
 
-GridConnection::GridConnection(glm::ivec2 relative_position, Facing facing, Direction direction, GridObject* parent)
+GridConnection::GridConnection(Position relative_position, Facing facing, Direction direction, GridObject* parent)
     : m_relative_position{relative_position}
     , m_facing{facing}
     , m_direction{direction}
@@ -15,16 +15,13 @@ GridConnection::GridConnection(glm::ivec2 relative_position, Facing facing, Dire
 {
 }
 
-glm::ivec2 GridConnection::grid_space_position() const
+Position GridConnection::grid_space_position() const
 {
     return m_parent->position() + m_relative_position;
 }
 
 void GridConnection::set_connected_wire(Wire* wire)
 {
-    if (m_wire)
-        ensure(!wire, "tried to replace the wire on the connection on ({}, {})", grid_space_position().x, grid_space_position().y);
-
     m_wire = wire;
 }
 

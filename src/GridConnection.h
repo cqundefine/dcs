@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Position.h"
+
 namespace DCS
 {
 
@@ -26,11 +28,11 @@ public:
         Right,
     };
 
-    GridConnection(glm::ivec2 relative_position, Facing facing, Direction direction, GridObject* parent);
+    GridConnection(Position relative_position, Facing facing, Direction direction, GridObject* parent);
 
-    glm::ivec2 grid_space_position() const;
+    Position grid_space_position() const;
 
-    glm::ivec2 relative_position() const { return m_relative_position; }
+    Position relative_position() const { return m_relative_position; }
     Direction direction() const { return m_direction; }
     GridObject* parent() const { return m_parent; }
 
@@ -40,7 +42,7 @@ public:
     void output_state(bool state, const Grid& grid) const;
 
 private:
-    glm::ivec2 m_relative_position;
+    Position m_relative_position;
     Facing m_facing;
     Direction m_direction;
 

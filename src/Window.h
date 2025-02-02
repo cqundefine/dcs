@@ -2,6 +2,7 @@
 
 #include "AutoRelease.h"
 #include "NonCopyable.h"
+#include "Position.h"
 #include "WindowEvent.h"
 
 #include <GLFW/glfw3.h>
@@ -26,7 +27,7 @@ public:
 
     std::optional<WindowEvent> poll_event();
 
-    glm::ivec2 mouse_position() const;
+    Position mouse_position() const;
     bool is_mouse_button_down(int button) const;
 
     std::uint32_t width() const { return m_width; }

@@ -7,6 +7,7 @@
 
 #include "Ensure.h"
 #include "Exception.h"
+#include "Keyboard.h"
 #include "Mouse.h"
 #include "WindowEvent.h"
 
@@ -68,6 +69,14 @@ Window::Window(std::uint32_t width, std::uint32_t height)
             glViewport(0, 0, width, height);
         });
 
+    glfwSetKeyCallback(
+        m_window,
+        [](GLFWwindow* window, int key, int scancode, int action, int mods)
+        {
+            auto self = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            self->m_event_queue.push(KeyEvent{key, KeyboardAction{action}, KeyboardModifiers{mods}});
+        });
+
     glfwSetMouseButtonCallback(
         m_window,
         [](GLFWwindow* window, int button, int action, int mods)
@@ -116,11 +125,11 @@ std::optional<WindowEvent> Window::poll_event()
     return event;
 }
 
-glm::ivec2 Window::mouse_position() const
+Position Window::mouse_position() const
 {
     double x, y;
     glfwGetCursorPos(m_window, &x, &y);
-    return {static_cast<int>(x), static_cast<int>(y)};
+    return {static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y)};
 }
 
 bool Window::is_mouse_button_down(int button) const

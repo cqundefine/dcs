@@ -3,19 +3,15 @@
 #include <print>
 
 #include "Ensure.h"
+#include "Exception.h"
 #include "Grid.h"
 #include "GridConnection.h"
 #include "GridObject.h"
+#include "Position.h"
 #include "nlohmann/json.hpp"
 
 namespace DCS
 {
-
-Wire::Wire(const std::vector<std::pair<glm::ivec2, glm::ivec2>>& wires, const std::vector<glm::ivec2>& connections)
-    : m_wires{wires}
-    , m_connections{connections}
-{
-}
 
 void Wire::draw(const Grid& grid, const Renderer& renderer)
 {
@@ -40,11 +36,8 @@ void Wire::update(const Grid& grid)
     std::println("Updating Wire");
     ensure(needs_update(), "update should not be called if not needed");
 
-    for (const auto connection_position : m_connections)
+    for (const auto connection : m_connections)
     {
-        const auto maybe_connection = grid.find_grid_connection(connection_position);
-        ensure(maybe_connection.has_value(), "created connection to a nonexistant object");
-        const auto connection = maybe_connection.value();
         if (!connection->parent()->needs_update())
         {
             connection->parent()->set_needs_update(true);
@@ -61,68 +54,75 @@ nlohmann::json Wire::serialize() const
 
     auto wires = nlohmann::json::array();
     for (const auto& wire : m_wires)
-    {
-        nlohmann::json w;
-
-        nlohmann::json begin;
-        begin["x"] = wire.first.x;
-        begin["y"] = wire.first.y;
-        w["begin"] = begin;
-
-        nlohmann::json end;
-        end["x"] = wire.second.x;
-        end["y"] = wire.second.y;
-        w["end"] = end;
-
-        wires.push_back(w);
-    }
+        wires.push_back(nlohmann::json{{"begin", wire.first}, {"end", wire.second}});
     j["wires"] = wires;
 
     auto connections = nlohmann::json::array();
     for (const auto connection : m_connections)
-    {
-        nlohmann::json c;
-        c["x"] = connection.x;
-        c["y"] = connection.y;
-        connections.push_back(c);
-    }
+        connections.push_back(connection->grid_space_position());
     j["connections"] = connections;
 
     return j;
 }
 
-void Wire::register_wire_for_grid(const Grid& grid)
+Ref<Wire> Wire::deserialize(nlohmann::json json, const Grid& grid)
 {
-    for (const auto connection_position : m_connections)
-    {
-        const auto maybe_connection = grid.find_grid_connection(connection_position);
-        ensure(maybe_connection.has_value(), "created connection to a nonexistant object");
-        const auto connection = maybe_connection.value();
+    const auto object = MakeRef<Wire>();
 
-        connection->set_connected_wire(this);
-        if (connection->direction() == GridConnection::Direction::Input)
-            connection->parent()->set_needs_update(true);
+    for (const auto& wire : json["wires"])
+        object->add_wire({wire["begin"].get<Position>(), wire["end"].get<Position>()});
+
+    for (const auto& connection : json["connections"])
+    {
+        auto maybe_connection = grid.find_grid_connection(connection.get<Position>());
+        ensure(maybe_connection.has_value(), "unknown connection during deserialization");
+        object->add_connection(*maybe_connection);
+    }
+
+    return object;
+}
+
+void Wire::add_wire(std::pair<Position, Position> wire)
+{
+    if (wire.first.x == wire.second.x)
+    {
+        if (wire.first.y > wire.second.y)
+            m_wires.push_back({wire.second, wire.first});
+        else
+            m_wires.push_back(wire);
+    }
+    else if (wire.first.y == wire.second.y)
+    {
+        if (wire.first.x > wire.second.x)
+            m_wires.push_back({wire.second, wire.first});
+        else
+            m_wires.push_back(wire);
+    }
+    else
+    {
+        throw Exception("tried to add an invalid wire from ({}, {}) to ({}, {})", wire.first.x, wire.first.y, wire.second.x, wire.second.y);
     }
 }
 
-void Wire::add_wire(std::pair<glm::ivec2, glm::ivec2> wire)
+void Wire::add_connection(GridConnection* connection)
 {
-    m_wires.push_back(wire);
-}
-
-void Wire::add_connection(glm::ivec2 connection_position, const Grid& grid)
-{
-    m_connections.push_back(connection_position);
-    const auto maybe_connection = grid.find_grid_connection(connection_position);
-    ensure(maybe_connection.has_value(), "created connection to a nonexistant object");
-    const auto connection = maybe_connection.value();
-
+    m_connections.push_back(connection);
     connection->set_connected_wire(this);
-    if (connection->direction() == GridConnection::Direction::Input)
-        connection->parent()->set_needs_update(true);
+    connection->parent()->set_needs_update(true);
 }
 
-bool Wire::contains_point(glm::ivec2 point) const
+void Wire::merge_with(Ref<Wire> other)
+{
+    for (const auto& wire : other->m_wires)
+        add_wire(wire);
+    other->m_wires.clear();
+
+    for (const auto connection : other->m_connections)
+        add_connection(connection);
+    other->m_connections.clear();
+}
+
+bool Wire::contains_point(Position point) const
 {
     for (const auto& wire : m_wires)
     {

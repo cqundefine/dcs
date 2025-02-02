@@ -6,6 +6,7 @@
 
 #include "GridConnection.h"
 #include "GridObject.h"
+#include "Position.h"
 #include "Renderer.h"
 #include "WindowEvent.h"
 #include "Wire.h"
@@ -23,15 +24,16 @@ public:
     void update();
 
     nlohmann::json serialize() const;
+    void deserialize(nlohmann::json json);
 
-    std::optional<Ref<GridObject>> find_grid_object(glm::ivec2 position) const;
-    std::optional<GridConnection*> find_grid_connection(glm::ivec2 position) const;
-    std::optional<Ref<Wire>> find_wire(glm::ivec2 position) const;
+    std::optional<Ref<GridObject>> find_grid_object(Position position) const;
+    std::optional<GridConnection*> find_grid_connection(Position position) const;
+    std::optional<Ref<Wire>> find_wire(Position position) const;
 
     std::uint32_t cell_size() const { return c_cell_size; }
 
 private:
-    void create_wire_from_to(glm::ivec2 begin, glm::ivec2 end);
+    void create_wire_from_to(Position begin, Position end);
 
     constexpr static std::uint32_t c_cell_size = 20;
 
@@ -39,7 +41,7 @@ private:
     std::vector<Ref<Wire>> m_wires;
 
     bool m_drawing_wire = false;
-    glm::ivec2 m_drawing_begin;
+    Position m_drawing_begin;
 };
 
 }

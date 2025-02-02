@@ -15,10 +15,11 @@ class Grid;
 class GridObject
 {
 public:
-    GridObject(glm::ivec2 position);
+    GridObject(Position position);
 
     virtual void draw(const Grid& grid, const Renderer& renderer) const = 0;
 
+    virtual std::string name() const = 0;
     virtual std::uint32_t width() const = 0;
     virtual std::uint32_t height() const = 0;
 
@@ -26,9 +27,9 @@ public:
 
     virtual nlohmann::json serialize() const = 0;
 
-    std::optional<GridConnection*> find_grid_connection(glm::ivec2 relative_position);
+    std::optional<GridConnection*> find_grid_connection(Position relative_position);
 
-    glm::ivec2 position() const { return m_position; }
+    Position position() const { return m_position; }
 
     bool needs_update() const { return m_needs_update; }
     void set_needs_update(bool needs_update) { m_needs_update = needs_update; }
@@ -39,7 +40,7 @@ protected:
     std::vector<GridConnection> m_connections;
 
 private:
-    glm::ivec2 m_position;
+    Position m_position;
     bool m_needs_update;
 };
 

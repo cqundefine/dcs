@@ -4,7 +4,7 @@
 namespace DCS
 {
 
-GridObject::GridObject(glm::ivec2 position)
+GridObject::GridObject(Position position)
     : m_position{position}
 {
 }
@@ -26,7 +26,7 @@ void GridObject::draw_connections(const Grid& grid, const Renderer& renderer) co
     }
 }
 
-std::optional<GridConnection*> GridObject::find_grid_connection(glm::ivec2 relative_position)
+std::optional<GridConnection*> GridObject::find_grid_connection(Position relative_position)
 {
     for (auto& connection : m_connections)
     {

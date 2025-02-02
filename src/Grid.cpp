@@ -1,8 +1,20 @@
 #include "Grid.h"
+#include "GridConnection.h"
+#include "Keyboard.h"
+#include "LogicGate.h"
 #include "Mouse.h"
+#include "PowerSource.h"
+#include "Util.h"
+#include "WindowEvent.h"
 
+#include <functional>
 #include <print>
 #include <type_traits>
+#include <vector>
+
+static std::map<std::string, std::function<DCS::Ref<DCS::GridObject>(DCS::Position, nlohmann::json)>> g_object_deserializers = {
+    {"PowerSource", DCS::PowerSource::deserialize},
+    {"LogicGate", DCS::LogicGate::deserialize}};
 
 namespace DCS
 {
@@ -16,7 +28,6 @@ void Grid::add_object(Ref<GridObject> object)
 void Grid::add_wire(Ref<Wire> wire)
 {
     m_wires.push_back(wire);
-    wire->register_wire_for_grid(*this);
 }
 
 void Grid::draw(Ref<Renderer> renderer) const
@@ -38,17 +49,24 @@ void Grid::process_event(WindowEvent event, Ref<Window> window)
         {
             using T = std::decay_t<decltype(arg)>;
 
-            if constexpr (std::same_as<T, DCS::MouseEvent>)
+            if constexpr (std::same_as<T, KeyEvent>)
+            {
+                if (arg.key() == GLFW_KEY_S && arg.action() == KeyboardAction::Press && arg.modifiers() == KeyboardModifiers::Control)
+                {
+                    std::println("{}", serialize().dump(4));
+                }
+            }
+            else if constexpr (std::same_as<T, MouseEvent>)
             {
                 if (arg.action() == MouseAction::Press && arg.button() == MouseButton::Left)
                 {
                     m_drawing_wire = true;
-                    m_drawing_begin = window->mouse_position() / glm::ivec2{cell_size(), cell_size()};
+                    m_drawing_begin = window->mouse_position() / Position{cell_size(), cell_size()};
                 }
                 else if (arg.action() == MouseAction::Release && arg.button() == MouseButton::Left)
                 {
                     m_drawing_wire = false;
-                    create_wire_from_to(m_drawing_begin, window->mouse_position() / glm::ivec2{cell_size(), cell_size()});
+                    create_wire_from_to(m_drawing_begin, window->mouse_position() / Position{cell_size(), cell_size()});
                 }
             }
         },
@@ -69,8 +87,17 @@ nlohmann::json Grid::serialize() const
     nlohmann::json j;
 
     auto objects = nlohmann::json::array();
+
     for (const auto object : m_objects)
-        objects.push_back(object->serialize());
+    {
+        nlohmann::json o;
+        o["name"] = object->name();
+        o["position"] = object->position();
+        o["object_specific"] = object->serialize();
+
+        objects.push_back(o);
+    }
+
     j["objects"] = objects;
 
     auto wires = nlohmann::json::array();
@@ -81,7 +108,20 @@ nlohmann::json Grid::serialize() const
     return j;
 }
 
-std::optional<Ref<GridObject>> Grid::find_grid_object(glm::ivec2 position) const
+void Grid::deserialize(nlohmann::json json)
+{
+    for (const auto& object : json["objects"])
+    {
+        std::string name = object["name"].get<std::string>();
+        Position position = object["position"].get<Position>();
+        add_object(g_object_deserializers[name](position, object["object_specific"]));
+    }
+
+    for (const auto& wire : json["wires"])
+        add_wire(Wire::deserialize(wire, *this));
+}
+
+std::optional<Ref<GridObject>> Grid::find_grid_object(Position position) const
 {
     for (const auto object : m_objects)
     {
@@ -95,7 +135,7 @@ std::optional<Ref<GridObject>> Grid::find_grid_object(glm::ivec2 position) const
     return {};
 }
 
-std::optional<GridConnection*> Grid::find_grid_connection(glm::ivec2 position) const
+std::optional<GridConnection*> Grid::find_grid_connection(Position position) const
 {
     const auto maybe_object = find_grid_object(position);
     if (!maybe_object.has_value())
@@ -104,7 +144,7 @@ std::optional<GridConnection*> Grid::find_grid_connection(glm::ivec2 position) c
     return object->find_grid_connection(position - object->position());
 }
 
-std::optional<Ref<Wire>> Grid::find_wire(glm::ivec2 position) const
+std::optional<Ref<Wire>> Grid::find_wire(Position position) const
 {
     for (const auto wire : m_wires)
     {
@@ -115,31 +155,48 @@ std::optional<Ref<Wire>> Grid::find_wire(glm::ivec2 position) const
     return {};
 }
 
-void Grid::create_wire_from_to(glm::ivec2 begin, glm::ivec2 end)
+void Grid::create_wire_from_to(Position begin, Position end)
 {
-    if (const auto maybe_wire = find_wire(begin); maybe_wire.has_value())
+    if (begin.x != end.x && begin.y != end.y)
+        return;
+
+    const auto maybe_wire_begin = find_wire(begin);
+    const auto maybe_wire_end = find_wire(end);
+
+    if (maybe_wire_begin && maybe_wire_end)
     {
-        const auto wire = maybe_wire.value();
-        wire->add_wire({begin, end});
-        if (find_grid_connection(end).has_value())
-            wire->add_connection(end, *this);
+        const auto wire_begin = maybe_wire_begin.value();
+        const auto wire_end = maybe_wire_end.value();
+
+        wire_begin->merge_with(wire_end);
+        std::erase(m_wires, wire_end);
+
+        wire_begin->add_wire({begin, end});
     }
-    else if (const auto maybe_wire = find_wire(end); maybe_wire.has_value())
+    else if (maybe_wire_begin)
     {
-        const auto wire = maybe_wire.value();
+        const auto wire = maybe_wire_begin.value();
+        wire->add_wire({begin, end});
+        if (auto maybe_connection = find_grid_connection(end); maybe_connection.has_value())
+            wire->add_connection(*maybe_connection);
+    }
+    else if (maybe_wire_end)
+    {
+        const auto wire = maybe_wire_end.value();
         wire->add_wire({end, begin});
-        if (find_grid_connection(begin).has_value())
-            wire->add_connection(begin, *this);
+        if (auto maybe_connection = find_grid_connection(begin); maybe_connection.has_value())
+            wire->add_connection(*maybe_connection);
     }
     else
     {
-        std::vector<glm::ivec2> connections;
-        if (find_grid_connection(begin).has_value())
-            connections.push_back(begin);
-        if (find_grid_connection(end).has_value())
-            connections.push_back(end);
+        auto wire = MakeRef<Wire>();
+        wire->add_wire(std::make_pair(begin, end));
 
-        auto wire = MakeRef<Wire>(std::vector{std::make_pair(begin, end)}, std::move(connections));
+        if (auto maybe_connection = find_grid_connection(begin); maybe_connection.has_value())
+            wire->add_connection(*maybe_connection);
+        if (auto maybe_connection = find_grid_connection(end); maybe_connection.has_value())
+            wire->add_connection(*maybe_connection);
+
         add_wire(wire);
         wire->set_needs_update(true);
         wire->update(*this);
