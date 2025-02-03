@@ -71,15 +71,11 @@ void LogicGate::draw(const Grid& grid, const Renderer& renderer) const
 {
     const auto cell_size = grid.cell_size();
 
-    const auto x = position().x * cell_size;
-    const auto y = position().y * cell_size;
-
     const auto width = this->width() * cell_size;
     const auto height = this->height() * cell_size;
 
-    renderer.draw_rect(x, y, width, height, {1.0f, 1.0f, 1.0f, 1.0f});
-    renderer.draw_text_centered(
-        renderer.default_font(), logic_gate_type_name(m_type), x + width / 2, y + height / 2, 1, {0.0f, 0.0f, 0.0f, 1.0f});
+    renderer.draw_rect(0, 0, width, height, {1.0f, 1.0f, 1.0f, 1.0f});
+    renderer.draw_text_centered(renderer.default_font(), logic_gate_type_name(m_type), width / 2, height / 2, 1, {0.0f, 0.0f, 0.0f, 1.0f});
 
     draw_connections(grid, renderer);
 }
@@ -101,7 +97,7 @@ std::uint32_t LogicGate::height() const
 
 void LogicGate::update(const Grid& grid)
 {
-    std::println("Updating LogicGate at ({}, {})", position().x, position().y);
+    std::println("Updating LogicGate at {}", position());
     ensure(needs_update(), "update should not be called if not needed");
 
     const auto& input1 = m_connections[0];

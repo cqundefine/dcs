@@ -1,5 +1,10 @@
 #include "Renderer.h"
 
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/fwd.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <print>
+
 #include "AutoRelease.h"
 #include "Buffer.h"
 #include "Util.h"
@@ -58,12 +63,24 @@ void Renderer::clear() const
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
+void Renderer::push_offset(Position offset)
+{
+    m_offset_stack.push(offset);
+    m_offset += offset;
+}
+
+void Renderer::pop_offset()
+{
+    m_offset -= m_offset_stack.top();
+    m_offset_stack.pop();
+}
+
 void Renderer::draw_text(Ref<Font> font, std::string_view text, std::uint32_t x, std::uint32_t y, float scale, const glm::vec4& color) const
 {
     y += font->get_text_dimensions(text).y * scale;
 
     m_text_shader->use();
-    m_text_shader->set_uniform("projection", m_window->projection());
+    prepare_shader(m_text_shader.get());
     m_text_shader->set_uniform("color", color);
 
     glBindVertexArray(m_rect_vertex_array);
@@ -109,7 +126,7 @@ void Renderer::draw_text_centered(
 void Renderer::draw_rect(std::uint32_t x, std::uint32_t y, std::uint32_t width, std::uint32_t height, const glm::vec4& color) const
 {
     m_rect_shader->use();
-    m_rect_shader->set_uniform("projection", m_window->projection());
+    prepare_shader(m_rect_shader.get());
     m_rect_shader->set_uniform("color", color);
 
     glBindVertexArray(m_rect_vertex_array);
@@ -121,7 +138,7 @@ void Renderer::draw_rect_between_points(std::uint32_t x1, std::uint32_t y1, std:
     const
 {
     m_rect_shader->use();
-    m_rect_shader->set_uniform("projection", m_window->projection());
+    prepare_shader(m_rect_shader.get());
     m_rect_shader->set_uniform("color", color);
 
     glBindVertexArray(m_rect_vertex_array);
@@ -138,7 +155,7 @@ void Renderer::draw_grid(
     const glm::vec4& color) const
 {
     m_grid_shader->use();
-    m_grid_shader->set_uniform("projection", m_window->projection());
+    prepare_shader(m_grid_shader.get());
     m_grid_shader->set_uniform("color", color);
     m_grid_shader->set_uniform("cellSize", static_cast<float>(cell_size));
     m_grid_shader->set_uniform("gridWidth", grid_width);
@@ -147,4 +164,11 @@ void Renderer::draw_grid(
     create_rect_into_buffer(*m_rect_vertex_buffer, x, y, cell_size * grid_size, cell_size * grid_size);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
+
+void Renderer::prepare_shader(DCS::Shader* shader) const
+{
+    shader->set_uniform("projection", m_window->projection());
+    shader->set_uniform("model", glm::translate(glm::mat4{1.0f}, {m_offset.x, m_offset.y, 0.0f}));
+}
+
 }

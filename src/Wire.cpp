@@ -84,24 +84,13 @@ Ref<Wire> Wire::deserialize(nlohmann::json json, const Grid& grid)
 
 void Wire::add_wire(std::pair<Position, Position> wire)
 {
-    if (wire.first.x == wire.second.x)
-    {
-        if (wire.first.y > wire.second.y)
-            m_wires.push_back({wire.second, wire.first});
-        else
-            m_wires.push_back(wire);
-    }
-    else if (wire.first.y == wire.second.y)
-    {
-        if (wire.first.x > wire.second.x)
-            m_wires.push_back({wire.second, wire.first});
-        else
-            m_wires.push_back(wire);
-    }
+    if (wire.first.x != wire.second.x && wire.first.y != wire.second.y)
+        throw Exception("tried to add an invalid wire from {} to {}", wire.first, wire.second);
+
+    if (wire.first.x < wire.second.x)
+        m_wires.push_back(wire);
     else
-    {
-        throw Exception("tried to add an invalid wire from ({}, {}) to ({}, {})", wire.first.x, wire.first.y, wire.second.x, wire.second.y);
-    }
+        m_wires.push_back({wire.second, wire.first});
 }
 
 void Wire::add_connection(GridConnection* connection)

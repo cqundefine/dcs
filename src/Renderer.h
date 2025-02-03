@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <glad/gl.h>
+#include <stack>
 #include <string_view>
 
 #include "AutoRelease.h"
 #include "Buffer.h"
 #include "Font.h"
+#include "Position.h"
 #include "Shader.h"
 #include "Util.h"
 #include "Window.h"
@@ -21,6 +23,8 @@ public:
     Renderer(Ref<Window> window, const std::filesystem::path& assets_path);
 
     void clear() const;
+    void push_offset(Position offset);
+    void pop_offset();
 
     void draw_text(Ref<Font> font, std::string_view text, std::uint32_t x, std::uint32_t y, float scale, const glm::vec4& color) const;
     void draw_text_centered(Ref<Font> font, std::string_view text, std::uint32_t x, std::uint32_t y, float scale, const glm::vec4& color)
@@ -41,6 +45,11 @@ public:
     Ref<Font> default_font() const { return m_default_font; }
 
 private:
+    void prepare_shader(DCS::Shader* shader) const;
+
+    std::stack<Position> m_offset_stack;
+    Position m_offset{};
+
     Ref<Window> m_window;
     Ref<Font> m_default_font;
 

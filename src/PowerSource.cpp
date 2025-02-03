@@ -19,13 +19,10 @@ void PowerSource::draw(const Grid& grid, const Renderer& renderer) const
 {
     const auto cell_size = grid.cell_size();
 
-    const auto x = position().x * cell_size;
-    const auto y = position().y * cell_size;
-
     const auto width = this->width() * cell_size;
     const auto height = this->height() * cell_size;
 
-    renderer.draw_rect(x, y, width, height, {0.0f, 1.0f, 0.0f, 1.0f});
+    renderer.draw_rect(0, 0, width, height, {0.0f, 1.0f, 0.0f, 1.0f});
 
     draw_connections(grid, renderer);
 }
@@ -47,7 +44,7 @@ std::uint32_t PowerSource::height() const
 
 void PowerSource::update(const Grid& grid)
 {
-    std::println("Updating PowerSource at ({}, {})", position().x, position().y);
+    std::println("Updating PowerSource at {}", position());
     ensure(needs_update(), "update should not be called if not needed");
     m_connections[0].output_state(true, grid);
     set_needs_update(false);

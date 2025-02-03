@@ -12,17 +12,13 @@ GridObject::GridObject(Position position)
 void GridObject::draw_connections(const Grid& grid, const Renderer& renderer) const
 {
     const auto cell_size = grid.cell_size();
-    const auto half_cell_size = cell_size / 2;
-
-    const auto x = position().x * cell_size;
-    const auto y = position().y * cell_size;
 
     for (const auto& position : m_connections)
     {
-        auto input_x = x + position.relative_position().x * cell_size + half_cell_size / 2;
-        auto input_y = y + position.relative_position().y * cell_size + half_cell_size / 2;
+        auto input_x = position.relative_position().x * cell_size + cell_size / 4;
+        auto input_y = position.relative_position().y * cell_size + cell_size / 4;
 
-        renderer.draw_rect(input_x, input_y, cell_size - half_cell_size, cell_size - half_cell_size, {0.0f, 0.0f, 0.0f, 1.0f});
+        renderer.draw_rect(input_x, input_y, cell_size / 2, cell_size / 2, {0.0f, 0.0f, 0.0f, 1.0f});
     }
 }
 

@@ -3,13 +3,15 @@
 #include "Keyboard.h"
 #include "LogicGate.h"
 #include "Mouse.h"
+#include "Position.h"
 #include "PowerSource.h"
+#include "Renderer.h"
+#include "UIElement.h"
 #include "Util.h"
 #include "WindowEvent.h"
 
 #include <functional>
 #include <print>
-#include <type_traits>
 #include <vector>
 
 static std::map<std::string, std::function<DCS::Ref<DCS::GridObject>(DCS::Position, nlohmann::json)>> g_object_deserializers = {
@@ -18,6 +20,11 @@ static std::map<std::string, std::function<DCS::Ref<DCS::GridObject>(DCS::Positi
 
 namespace DCS
 {
+
+Grid::Grid(Ref<Renderer> renderer, Position position)
+    : UIElement{renderer, position}
+{
+}
 
 void Grid::add_object(Ref<GridObject> object)
 {
@@ -30,47 +37,58 @@ void Grid::add_wire(Ref<Wire> wire)
     m_wires.push_back(wire);
 }
 
-void Grid::draw(Ref<Renderer> renderer) const
+void Grid::draw() const
 {
-    const auto grid_size = std::max(renderer->target_window()->width(), renderer->target_window()->height()) / cell_size() + 1;
-    renderer->draw_grid(1, 1, grid_size, cell_size(), 0.5f, {1.0f, 1.0f, 1.0f, 1.0f});
+    const auto grid_size =
+        std::max(renderer()->target_window()->width() - position().x, renderer()->target_window()->height() - position().y) / cell_size() +
+        1;
+    renderer()->draw_grid(1, 1, grid_size, cell_size(), 0.5f, {1.0f, 1.0f, 1.0f, 1.0f});
 
     for (const auto wire : m_wires)
-        wire->draw(*this, *renderer);
+        wire->draw(*this, *renderer());
 
     for (const auto object : m_objects)
-        object->draw(*this, *renderer);
+    {
+        renderer()->push_offset(object->position() * Position{cell_size(), cell_size()});
+        object->draw(*this, *renderer());
+        renderer()->pop_offset();
+    }
+
+    if (m_drawing_wire)
+    {
+        auto first_point = m_drawing_begin;
+        auto second_point = get_relative_mouse_position() / Position{cell_size(), cell_size()};
+
+        if (second_point < first_point)
+            std::ranges::swap(first_point, second_point);
+
+        renderer()->draw_rect_between_points(
+            first_point.x * cell_size() + cell_size() / 4,
+            first_point.y * cell_size() + cell_size() / 4,
+            (second_point.x + 1) * cell_size() - cell_size() / 4,
+            (second_point.y + 1) * cell_size() - cell_size() / 4,
+            {0.3f, 0.3f, 0.3f, 1.0f});
+    }
 }
 
-void Grid::process_event(WindowEvent event, Ref<Window> window)
+void Grid::on_key_event(KeyEvent e)
 {
-    std::visit(
-        [&](auto&& arg)
-        {
-            using T = std::decay_t<decltype(arg)>;
+    if (e.key() == GLFW_KEY_S && e.action() == KeyboardAction::Press && e.modifiers() == KeyboardModifiers::Control)
+        std::println("{}", serialize().dump(4));
+}
 
-            if constexpr (std::same_as<T, KeyEvent>)
-            {
-                if (arg.key() == GLFW_KEY_S && arg.action() == KeyboardAction::Press && arg.modifiers() == KeyboardModifiers::Control)
-                {
-                    std::println("{}", serialize().dump(4));
-                }
-            }
-            else if constexpr (std::same_as<T, MouseEvent>)
-            {
-                if (arg.action() == MouseAction::Press && arg.button() == MouseButton::Left)
-                {
-                    m_drawing_wire = true;
-                    m_drawing_begin = window->mouse_position() / Position{cell_size(), cell_size()};
-                }
-                else if (arg.action() == MouseAction::Release && arg.button() == MouseButton::Left)
-                {
-                    m_drawing_wire = false;
-                    create_wire_from_to(m_drawing_begin, window->mouse_position() / Position{cell_size(), cell_size()});
-                }
-            }
-        },
-        event);
+void Grid::on_mouse_event(MouseEvent e, Position mouse_position)
+{
+    if (e.action() == MouseAction::Press && e.button() == MouseButton::Left)
+    {
+        m_drawing_wire = true;
+        m_drawing_begin = mouse_position / Position{cell_size(), cell_size()};
+    }
+    else if (e.action() == MouseAction::Release && e.button() == MouseButton::Left)
+    {
+        m_drawing_wire = false;
+        create_wire_from_to(m_drawing_begin, mouse_position / Position{cell_size(), cell_size()});
+    }
 }
 
 void Grid::update()
