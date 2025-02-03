@@ -168,8 +168,11 @@ void Grid::create_wire_from_to(Position begin, Position end)
         const auto wire_begin = maybe_wire_begin.value();
         const auto wire_end = maybe_wire_end.value();
 
-        wire_begin->merge_with(wire_end);
-        std::erase(m_wires, wire_end);
+        if (wire_begin != wire_end)
+        {
+            wire_begin->merge_with(wire_end);
+            std::erase(m_wires, wire_end);
+        }
 
         wire_begin->add_wire({begin, end});
     }
