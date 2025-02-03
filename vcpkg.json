@@ -1,0 +1,37 @@
+{
+    "builtin-baseline": "b322364f06308bdd24823f9d8f03fe0cc86fd46f",
+    "dependencies": [
+        "freetype",
+        {
+            "name": "glfw3",
+            "platform": "linux",
+            "features": [
+                "wayland"
+            ]
+        },
+        {
+            "name": "glfw3",
+            "platform": "!linux"
+        },
+        "glm",
+        "nlohmann-json"
+    ],
+    "overrides": [
+        {
+            "name": "freetype",
+            "version": "2.13.3"
+        },
+        {
+            "name": "glfw3",
+            "version": "3.4"
+        },
+        {
+            "name": "glm",
+            "version": "1.0.0"
+        },
+        {
+            "name": "nlohmann-json",
+            "version": "3.11.3"
+        }
+    ]
+}
