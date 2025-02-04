@@ -21,8 +21,8 @@ static std::map<std::string, std::function<DCS::Ref<DCS::GridObject>(DCS::Positi
 namespace DCS
 {
 
-Grid::Grid(Ref<Renderer> renderer, Position position)
-    : UIElement{renderer, position}
+Grid::Grid(Ref<Renderer> renderer, Position position, std::optional<std::uint32_t> width, std::optional<std::uint32_t> height)
+    : UIElement{renderer, position, width, height}
 {
 }
 
@@ -39,9 +39,7 @@ void Grid::add_wire(Ref<Wire> wire)
 
 void Grid::draw() const
 {
-    const auto grid_size =
-        std::max(renderer()->target_window()->width() - position().x, renderer()->target_window()->height() - position().y) / cell_size() +
-        1;
+    const auto grid_size = std::max(width(), height()) / cell_size() + 1;
     renderer()->draw_grid(1, 1, grid_size, cell_size(), 0.5f, {1.0f, 1.0f, 1.0f, 1.0f});
 
     for (const auto wire : m_wires)

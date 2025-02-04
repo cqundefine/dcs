@@ -146,6 +146,20 @@ void Renderer::draw_rect_between_points(std::uint32_t x1, std::uint32_t y1, std:
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void Renderer::draw_frame(
+    std::uint32_t x,
+    std::uint32_t y,
+    std::uint32_t width,
+    std::uint32_t height,
+    std::uint32_t thickness,
+    const glm::vec4& color) const
+{
+    draw_rect(x, y, width, thickness, color);                      // top
+    draw_rect(x, y, thickness, height, color);                     // left
+    draw_rect(x, y + height - thickness, width, thickness, color); // bottom
+    draw_rect(x + width - thickness, y, thickness, height, color); // right
+}
+
 void Renderer::draw_grid(
     std::uint32_t x,
     std::uint32_t y,

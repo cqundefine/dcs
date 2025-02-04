@@ -87,7 +87,7 @@ void Wire::add_wire(std::pair<Position, Position> wire)
     if (wire.first.x != wire.second.x && wire.first.y != wire.second.y)
         throw Exception("tried to add an invalid wire from {} to {}", wire.first, wire.second);
 
-    if (wire.first.x < wire.second.x)
+    if (wire.first < wire.second)
         m_wires.push_back(wire);
     else
         m_wires.push_back({wire.second, wire.first});

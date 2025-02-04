@@ -18,7 +18,7 @@ namespace DCS
 class Grid : public UIElement
 {
 public:
-    Grid(Ref<Renderer> renderer, Position position);
+    Grid(Ref<Renderer> renderer, Position position, std::optional<std::uint32_t> width, std::optional<std::uint32_t> height);
 
     void add_object(Ref<GridObject> object);
     void add_wire(Ref<Wire> object);

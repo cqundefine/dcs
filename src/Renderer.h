@@ -33,6 +33,14 @@ public:
     void draw_rect(std::uint32_t x, std::uint32_t y, std::uint32_t width, std::uint32_t height, const glm::vec4& color) const;
     void draw_rect_between_points(std::uint32_t x1, std::uint32_t y1, std::uint32_t x2, std::uint32_t y2, const glm::vec4& color) const;
 
+    void draw_frame(
+        std::uint32_t x,
+        std::uint32_t y,
+        std::uint32_t width,
+        std::uint32_t height,
+        std::uint32_t thickness,
+        const glm::vec4& color) const;
+
     void draw_grid(
         std::uint32_t x,
         std::uint32_t y,
