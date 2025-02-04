@@ -1,6 +1,6 @@
 #pragma once
 
-#include <freetype2/ft2build.h>
+#include <ft2build.h>
 #include <glm/glm.hpp>
 #include FT_FREETYPE_H
 #include <filesystem>
