@@ -7,7 +7,7 @@
 namespace DCS
 {
 
-template <class T, T Invalid = {}>
+template <class T, T Invalid = T{}>
 class AutoRelease
 {
     MAKE_NONCOPYABLE(AutoRelease);

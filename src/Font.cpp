@@ -16,7 +16,7 @@ Font::Font(const std::filesystem::path& font_path, std::uint32_t font_size)
     , m_face{nullptr, FT_Done_Face}
 {
     ensure(FT_Init_FreeType(&m_ft) == 0, "failed to initialize freetype");
-    ensure(FT_New_Face(m_ft, font_path.c_str(), 0, &m_face) == 0, "failed to create the face");
+    ensure(FT_New_Face(m_ft, font_path.string().c_str(), 0, &m_face) == 0, "failed to create the face");
     ensure(FT_Set_Pixel_Sizes(m_face, 0, font_size) == 0, "failed to set the pixel size");
 }
 

@@ -19,6 +19,10 @@ add_subdirectory(external/glad)
 
 file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 add_executable(DCS ${SOURCES})
-target_link_libraries(DCS PUBLIC glad stdc++exp Freetype::Freetype glfw glm::glm nlohmann_json::nlohmann_json)
+target_link_libraries(DCS PUBLIC glad Freetype::Freetype glfw glm::glm nlohmann_json::nlohmann_json)
 target_include_directories(DCS PUBLIC ${CMAKE_SOURCE_DIR}/external/)
 target_compile_definitions(DCS PUBLIC GLFW_INCLUDE_NONE)
+
+if (LINUX)
+    target_link_libraries(DCS PUBLIC stdc++exp)
+endif()
