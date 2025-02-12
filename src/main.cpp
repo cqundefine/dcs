@@ -28,11 +28,11 @@ int main(int argc, char** argv)
 
         std::vector<DCS::Ref<DCS::UIElement>> ui_elements;
         ui_elements.push_back(
-            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 0}, 150, 50, "Power Source", []() { std::println("creating wire"); }));
+            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 0}, 150, 50, "Power Source", []() { std::println("creating power source"); }));
         ui_elements.push_back(
-            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 50}, 150, 50, "AND Gate", []() { std::println("creating wire"); }));
+            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 50}, 150, 50, "AND Gate", []() { std::println("creating and"); }));
         ui_elements.push_back(
-            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 100}, 150, 50, "OR Gate", []() { std::println("creating wire"); }));
+            DCS::MakeRef<DCS::UIButton>(renderer, DCS::Position{0, 100}, 150, 50, "OR Gate", []() { std::println("creating or"); }));
 
         const auto grid =
             DCS::MakeRef<DCS::Grid>(renderer, DCS::Position{150, 0}, std::optional<std::uint32_t>{}, std::optional<std::uint32_t>{});
